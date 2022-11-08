@@ -1,4 +1,4 @@
-function [ens_nodes, results] = find_plot_temporal_crf_core(best_model,shuffle_model,data,stimuli, coords)
+function [ens_nodes, results] = find_plot_temporal_crf_core_noshuf(best_model,data,stimuli, coords)
 % FIND_PLOT_TEMPORAL_CRF_CORE Find and plot multi-timeframe neuron ensembles with CRF models.
 %
 % Input
@@ -28,26 +28,28 @@ function [ens_nodes, results] = find_plot_temporal_crf_core(best_model,shuffle_m
         coords = repmat(coords, time_span, 1);
     end
 
-    [ens_nodes, results] = find_temporal_ens_nodes(best_model, shuffle_model, data, stimuli, num_controls);
+    [ens_nodes, results] = find_temporal_ens_nodes_noshuf(best_model, data, stimuli, num_controls);
     core_crf = results.core_crf;
     epsum = results.epsum;
     auc = results.auc;
     auc_ens = results.auc_ens;
-    shuffle_model = results.shuffle_model;
+%     shuffle_model = results.shuffle_model;
 
     %% plot
     nodesz = 30;
     nsmi = min(epsum);
     nsma = max(epsum);
-    aucmi = 0;
-    aucma = 1;
+    aucmi = 0.25;%0;
+    aucma = 0.75;%1;
+    Nrows = floor(sqrt(num_subplots*num_stim));
+    Ncols = ceil(num_subplots*num_stim/Nrows);
     f = figure; set(gcf,'color','w')
     f.Name = sprintf('K=%d', time_span);
     color_by_offset = @(x) floor((x-1)/num_orig_neuron) / max(1, time_span-1);
     for ii = 1:num_stim
 
         % AUC - node strength plot
-        cur_axes = subplot(num_subplots,num_stim,ii); hold on
+        cur_axes = subplot(Nrows, Ncols,ii); hold on
         colormap(cur_axes, autumn)
         scatter(epsum,auc(:,ii),nodesz,0.5*[1 1 1],'filled')
         % Stimuli nodes blue
@@ -61,10 +63,15 @@ function [ens_nodes, results] = find_plot_temporal_crf_core(best_model,shuffle_m
             'color',0.7*[1 1 1]);
         plot([nsmi nsma],(mean(auc_ens{ii})-std(auc_ens{ii}))*[1 1],'--',...
             'color',0.7*[1 1 1]);
-        plot(shuffle_model.mepsum*[1 1],[aucmi aucma],'k--');
-        plot((shuffle_model.mepsum+shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+%         plot(shuffle_model.mepsum*[1 1],[aucmi aucma],'k--');
+%         plot((shuffle_model.mepsum+shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+%             'color',0.7*[1 1 1]);
+%         plot((shuffle_model.mepsum-shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+%             'color',0.7*[1 1 1]);
+        plot(nanmean(epsum)*[1 1],[aucmi aucma],'k--');
+        plot((nanmean(epsum)+nanstd(epsum)/10)*[1 1],[aucmi aucma],'--',...
             'color',0.7*[1 1 1]);
-        plot((shuffle_model.mepsum-shuffle_model.sdepsum)*[1 1],[aucmi aucma],'--',...
+        plot((nanmean(epsum)-nanstd(epsum)/10)*[1 1],[aucmi aucma],'--',...
             'color',0.7*[1 1 1]);
         xlim([nsmi nsma]); ylim([aucmi aucma])
         xlabel('node strength'); ylabel(['AUC' num2str(ii)]);
@@ -72,7 +79,7 @@ function [ens_nodes, results] = find_plot_temporal_crf_core(best_model,shuffle_m
 
         % plot coordinates
         if num_subplots > 1
-            subplot(num_subplots,num_stim,ii+num_stim);
+            subplot(Nrows, Ncols,ii+num_stim);
             plotGraphHighlight(coords,mod(core_crf{ii}-1, num_orig_neuron)+1,'red',1 / time_span)
         end
 

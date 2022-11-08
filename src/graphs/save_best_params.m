@@ -14,7 +14,11 @@ logZ = best_model.theta.logZ;
 s_lambda = best_model.s_lambda;
 p_lambda = best_model.p_lambda;
 density = best_model.density;
+try
 time_span = merged_models.models{best_model_index}.time_span;
+catch
+    time_span = 1;
+end
 
 save(fullfile(results_folder, 'best_model_full.mat'), 'graph', 'node_pot', 'edge_pot', ...
     'G', 'F', 'logZ', 's_lambda', 'p_lambda', 'density', 'time_span');
